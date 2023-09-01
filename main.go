@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"github.com/golang-jwt/jwt"
 	"time"
+	"github.com/mirzomumin/web_server/middleware"
 )
 
 const SECRET_KEY = "MY_SECRET_KEY"
@@ -125,10 +126,55 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		map[string]string{"message": "success"})
 }
 
+func GetUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	name := params["name"]
+	var user User
+	var errors []string
+
+	db, err := sql.Open("sqlite3", "serverDb.sqlite3")
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	row := db.QueryRow(
+		"SELECT id, name, age FROM users WHERE name=?", name)
+	err = row.Scan(&user.Id, &user.Name, &user.Age)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+
+	if errors != nil {
+		json.NewEncoder(w).Encode(
+			map[string][]string{"error": errors})
+		return
+	}
+
+	jsonData, err := json.Marshal(user)
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonData)
+}
+
 func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/user/register", SignUp).Methods("POST")
-	router.HandleFunc("/user/login", SignIn).Methods("POST")
+
+	// Subrouter for another handlers
+	myRouter := router.Methods(
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodGet,
+		http.MethodDelete,
+	).PathPrefix("/user").Subrouter()
+	myRouter.HandleFunc("/{name:[a-zA-Z]+}", GetUser).Methods("GET")
+	myRouter.Use(middleware.AuthMiddleware)
+
+	// Subrouter for user register and login
+	authRouter := router.Methods(
+		http.MethodPost,
+	).PathPrefix("/user").Subrouter()
+	authRouter.HandleFunc("/register", SignUp).Methods("POST")
+	authRouter.HandleFunc("/login", SignIn).Methods("POST")
+
 	http.Handle("/", router)
 	http.ListenAndServe("localhost:8000", nil)
 }

@@ -1,13 +1,16 @@
-package main
+package middleware
 
 import (
 	"net/http"
 	"context"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
+	"fmt"
 )
 
+const SECRET_KEY = "MY_SECRET_KEY"
+
 func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandleFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type","application/json")
 		cookie, err := r.Cookie("SESSTOKEN")
 		if err != nil {
