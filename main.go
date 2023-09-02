@@ -23,6 +23,14 @@ type User struct {
 	Password string `json:"password,omitempty"`
 }
 
+type Contact struct {
+	Id int `json:"id"`
+	Phone string `json:"phone"`
+	Description string `json:"description"`
+	IsFax bool `json:"is_fax"`
+	UserId int `json:"user_id"`
+}
+
 // Sign Up user function
 func SignUp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -74,9 +82,13 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errors = append(errors, err.Error())
 	}
-	json.Unmarshal(reqBody, &user)
+	err = json.Unmarshal(reqBody, &user)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
 
 	db, err := sql.Open("sqlite3", "serverDb.sqlite3")
+	defer db.Close()
 	if err != nil {
 		errors = append(errors, err.Error())
 	}
@@ -126,6 +138,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		map[string]string{"message": "success"})
 }
 
+// Get user
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
@@ -137,9 +150,15 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errors = append(errors, err.Error())
 	}
+	defer db.Close()
 	row := db.QueryRow(
 		"SELECT id, name, age FROM users WHERE name=?", name)
 	err = row.Scan(&user.Id, &user.Name, &user.Age)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+
+	jsonData, err := json.Marshal(user)
 	if err != nil {
 		errors = append(errors, err.Error())
 	}
@@ -150,10 +169,142 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(user)
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonData)
 }
+
+// Add new contact or return all exsiting contacts
+func ListAddContact(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var errors []string
+	db, err := sql.Open("sqlite3", "serverDb.sqlite3")
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	defer db.Close()
+	if r.Method == "POST" {
+		var contact Contact
+		reqBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+		json.Unmarshal(reqBody, &contact)
+
+		props, _ := r.Context().Value("props").(jwt.MapClaims)
+		contact.UserId = int(props["user_id"].(float64))
+
+		_, err = db.Exec(
+			"INSERT INTO contacts (phone, description, is_fax, user_id) VALUES (?,?,?,?)",
+			contact.Phone, contact.Description, contact.IsFax, contact.UserId)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+
+		if errors != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(
+				map[string][]string{"error": errors})
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(
+			map[string]string{"message": "Contact is successfully added!"})
+	} else {
+		q := r.URL.Query().Get("q")
+		contacts := []Contact{}
+
+		rows, err := db.Query("SELECT id, user_id, phone, description, is_fax FROM contacts WHERE phone LIKE '%' || ? || '%'", q)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+		for rows.Next() {
+			var contact Contact
+			rows.Scan(&contact.Id, &contact.UserId, &contact.Phone,
+				&contact.Description, &contact.IsFax)
+			contacts = append(contacts, contact)
+		}
+
+		jsonData, err := json.Marshal(contacts)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+
+		if errors != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(
+				map[string][]string{"error": errors})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonData)
+	}
+}
+
+// Update or remove specific contact
+func UpdateRemoveContact(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	var errors []string
+	db, err := sql.Open("sqlite3", "serverDb.sqlite3")
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	if r.Method == "PUT" {
+		var contact Contact
+		reqBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+
+		row := db.QueryRow(
+			"SELECT phone, description, is_fax, user_id FROM contacts WHERE id=?",
+			params["id"],
+		)
+		err = row.Scan(&contact.Phone, &contact.Description, &contact.IsFax, &contact.UserId)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+
+		err = json.Unmarshal(reqBody, &contact)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+
+		props, _ := r.Context().Value("props").(jwt.MapClaims)
+		contact.UserId = int(props["user_id"].(float64))
+
+		_, err = db.Exec("UPDATE contacts SET phone=?, description=?, is_fax=?, user_id=? WHERE id=?", contact.Phone, contact.Description, contact.IsFax, contact.UserId, params["id"])
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+
+		if errors != nil {
+			json.NewEncoder(w).Encode(
+				map[string][]string{"error": errors})
+			return
+		}
+
+		json.NewEncoder(w).Encode(
+			map[string]string{"message": "success"})
+	} else {
+		_, err = db.Exec("DELETE FROM contacts WHERE id=?", params["id"])
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
+
+		if errors != nil {
+			json.NewEncoder(w).Encode(
+				map[string][]string{"error": errors})
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+
 
 func main() {
 	router := mux.NewRouter()
@@ -165,6 +316,8 @@ func main() {
 		http.MethodGet,
 		http.MethodDelete,
 	).PathPrefix("/user").Subrouter()
+	myRouter.HandleFunc("/phone", ListAddContact).Methods("POST", "GET")
+	myRouter.HandleFunc("/phone/{id:[0-9]+}", UpdateRemoveContact).Methods("PUT", "DELETE")
 	myRouter.HandleFunc("/{name:[a-zA-Z]+}", GetUser).Methods("GET")
 	myRouter.Use(middleware.AuthMiddleware)
 
