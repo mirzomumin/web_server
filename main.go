@@ -17,10 +17,10 @@ const SECRET_KEY = "MY_SECRET_KEY"
 
 type User struct {
 	Id int `json:"id"`
-	Login string `json:"login,omitempty"`
-	Name string `json:"name,omitempty"`
-	Age int `json:"age,omitempty"`
-	Password string `json:"password,omitempty"`
+	Login string `json:"login"`
+	Name string `json:"name"`
+	Age int `json:"age"`
+	Password string `json:"password"`
 }
 
 type Contact struct {
@@ -111,7 +111,6 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		jwt.MapClaims{
 			"user_id": userId,
 			"login":  user.Login,
-			"exp": time.Now().Add(1 * time.Minute).Unix(),
 		})
 	tokenString, err := token.SignedString([]byte(SECRET_KEY))
 	if err != nil {
