@@ -16,4 +16,3 @@ CREATE TABLE IF NOT EXISTS "contacts" (
 	FOREIGN KEY("user_id") REFERENCES "users"("id"),
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
-COMMIT;
