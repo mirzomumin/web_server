@@ -4,17 +4,20 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mirzomumin/web_server/internal/domains"
 	"github.com/mirzomumin/web_server/pkg/auth"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 )
 
 // Sign Up user function
 func SignUp(w http.ResponseWriter, r *http.Request) {
+	godotenv.Load(".env")
 	w.Header().Set("Content-Type", "application/json")
 	r.ParseForm()
 	var errors []string
@@ -24,7 +27,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 	age := r.FormValue("age")
 	password := r.FormValue("password")
 
-	db, err := sql.Open("sqlite3", "serverDb.sqlite3")
+	db, err := sql.Open("sqlite3", os.Getenv("DATABASE"))
 	if err != nil {
 		errors = append(errors, err.Error())
 	}
@@ -57,6 +60,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 
 // Sign In user function
 func SignIn(w http.ResponseWriter, r *http.Request) {
+	godotenv.Load(".env")
 	w.Header().Set("Content-Type", "application/json")
 	var user domains.User
 	var errors []string
@@ -69,7 +73,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		errors = append(errors, err.Error())
 	}
 
-	db, err := sql.Open("sqlite3", "serverDb.sqlite3")
+	db, err := sql.Open("sqlite3", os.Getenv("DATABASE"))
 	defer db.Close()
 	if err != nil {
 		errors = append(errors, err.Error())
@@ -115,13 +119,14 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 
 // Get user
 func GetUser(w http.ResponseWriter, r *http.Request) {
+	godotenv.Load(".env")
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	name := params["name"]
 	var user domains.User
 	var errors []string
 
-	db, err := sql.Open("sqlite3", "serverDb.sqlite3")
+	db, err := sql.Open("sqlite3", os.Getenv("DATABASE"))
 	if err != nil {
 		errors = append(errors, err.Error())
 	}

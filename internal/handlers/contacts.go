@@ -5,17 +5,20 @@ import (
 	"encoding/json"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mirzomumin/web_server/internal/domains"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 // Add new contact or return all exsiting contacts
 func ListAddContact(w http.ResponseWriter, r *http.Request) {
+	godotenv.Load(".env")
 	w.Header().Set("Content-Type", "application/json")
 	var errors []string
-	db, err := sql.Open("sqlite3", "serverDb.sqlite3")
+	db, err := sql.Open("sqlite3", os.Getenv("DATABASE"))
 	if err != nil {
 		errors = append(errors, err.Error())
 	}
@@ -87,10 +90,11 @@ func ListAddContact(w http.ResponseWriter, r *http.Request) {
 
 // Update or remove specific contact
 func UpdateRemoveContact(w http.ResponseWriter, r *http.Request) {
+	godotenv.Load(".env")
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	var errors []string
-	db, err := sql.Open("sqlite3", "serverDb.sqlite3")
+	db, err := sql.Open("sqlite3", os.Getenv("DATABASE"))
 	if err != nil {
 		errors = append(errors, err.Error())
 	}
