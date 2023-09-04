@@ -1,16 +1,16 @@
 package handlers
 
 import (
-	"github.com/mirzomumin/web_server/pkg/auth"
-	"net/http"
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
-	"io/ioutil"
-	"time"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/mirzomumin/web_server/internal/domains"
+	"github.com/mirzomumin/web_server/pkg/auth"
+	"golang.org/x/crypto/bcrypt"
+	"io/ioutil"
+	"net/http"
+	"time"
 )
 
 // Sign Up user function
@@ -94,9 +94,9 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie := http.Cookie{
-		Name: "SESSTOKEN",
-		Value: token,
-		Expires: time.Now().Add(1 * time.Minute),
+		Name:     "SESSTOKEN",
+		Value:    token,
+		Expires:  time.Now().Add(1 * time.Minute),
 		HttpOnly: true,
 	}
 	http.SetCookie(w, &cookie)

@@ -1,18 +1,18 @@
 package middleware
 
 import (
-	"net/http"
 	"context"
-	"github.com/golang-jwt/jwt"
 	"fmt"
+	"github.com/golang-jwt/jwt"
 	"github.com/joho/godotenv"
+	"net/http"
 	"os"
 )
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	godotenv.Load(".env")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type","application/json")
+		w.Header().Set("Content-Type", "application/json")
 		cookie, err := r.Cookie("SESSTOKEN")
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -46,7 +46,7 @@ func ContentTypeMiddleware(next http.Handler) http.Handler {
 		if contentType == "application/json" || contentType == "" {
 			next.ServeHTTP(w, r)
 		} else {
-			w.Header().Set("Content-Type","application/json")
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(`{"error": "Invalid Content-Type. It should be \"application/json\""}`))
 		}

@@ -1,14 +1,14 @@
 package handlers
 
 import (
-	"net/http"
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
-	"io/ioutil"
-	"github.com/golang-jwt/jwt"
 	"encoding/json"
+	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/mirzomumin/web_server/internal/domains"
+	"io/ioutil"
+	"net/http"
 )
 
 // Add new contact or return all exsiting contacts

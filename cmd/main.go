@@ -1,10 +1,10 @@
 package main
 
 import (
-	"net/http"
-	"github.com/mirzomumin/web_server/pkg/middleware"
-	"github.com/mirzomumin/web_server/internal/handlers"
 	"github.com/gorilla/mux"
+	"github.com/mirzomumin/web_server/internal/handlers"
+	"github.com/mirzomumin/web_server/pkg/middleware"
+	"net/http"
 )
 
 func main() {
