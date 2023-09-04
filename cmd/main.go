@@ -2,7 +2,7 @@ package main
 
 import (
 	"net/http"
-	"github.com/mirzomumin/web_server/middleware"
+	"github.com/mirzomumin/web_server/pkg/middleware"
 	"github.com/mirzomumin/web_server/internal/services"
 	"github.com/gorilla/mux"
 )

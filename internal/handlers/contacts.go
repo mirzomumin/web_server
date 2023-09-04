@@ -1,4 +1,4 @@
-package services
+package handlers
 
 import (
 	"net/http"
@@ -27,6 +27,11 @@ func ListAddContact(w http.ResponseWriter, r *http.Request) {
 			errors = append(errors, err.Error())
 		}
 		json.Unmarshal(reqBody, &contact)
+
+		if len(contact.Phone) > 12 {
+			err := "phone field max length is 12"
+			errors = append(errors, err)
+		}
 
 		props, _ := r.Context().Value("props").(jwt.MapClaims)
 		contact.UserId = int(props["user_id"].(float64))

@@ -1,4 +1,4 @@
-package services
+package handlers
 
 import (
 	"github.com/mirzomumin/web_server/pkg/auth"
